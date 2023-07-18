@@ -17,6 +17,8 @@ export default function SideEditView({ side, positions }: SideEditViewProps) {
     null
   );
 
+  const cellSize = 48;
+
   useEffect(() => {
     function handleResize() {
       if (!canvasRef.current) {
@@ -25,30 +27,10 @@ export default function SideEditView({ side, positions }: SideEditViewProps) {
 
       const canvas = canvasRef.current;
 
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
+      canvas.width = window.innerWidth / 2;
+      canvas.height = window.innerHeight / 2;
 
-      const tempCtx = tempCanvas.getContext("2d");
-      const canvasData = canvas.toDataURL();
-
-      const img = new Image();
-      img.onload = () => {
-        if (tempCtx) {
-          tempCtx.drawImage(img, 0, 0);
-          canvas.width = window.innerWidth / 2;
-          canvas.height = window.innerHeight / 2;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            const pattern = ctx.createPattern(tempCanvas, "repeat");
-            if (pattern) {
-              ctx.fillStyle = pattern;
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-          }
-        }
-      };
-      img.src = canvasData;
+      drawGrid();
     }
 
     handleResize();
@@ -58,6 +40,29 @@ export default function SideEditView({ side, positions }: SideEditViewProps) {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  function drawGrid() {
+    if (!canvasRef.current) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    for (let x = 0; x < canvas.width; x += cellSize) {
+      ctx.moveTo(0.5 + x, 0);
+      ctx.lineTo(x, canvas.height);
+    }
+
+    for (let y = 0; y < canvas.height; y += cellSize) {
+      console.log(y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+    }
+
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+  }
 
   function getMousePos(clientX: number, clientY: number) {
     const canvas = canvasRef.current as HTMLCanvasElement;
