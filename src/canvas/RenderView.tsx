@@ -6,7 +6,7 @@ import {
   GizmoHelper,
   GizmoViewport,
 } from "@react-three/drei";
-import { BufferGeometry } from "three";
+import { BufferGeometry, DoubleSide } from "three";
 import { useModelStore } from "../store";
 import { useMemo } from "react";
 
@@ -36,9 +36,17 @@ function Points() {
   // const indices = useModelStore((state) => state.indices);
   // const setIndices = useModelStore((state) => state.setIndices);
 
-  // const color = 0xaaaaaa;
+  const color = 0xaaaaaa;
 
-  const geometry = useMemo(() => {
+  const meshGeometry = useMemo(() => {
+    const g = new BufferGeometry();
+
+    g.setFromPoints(positions);
+    g.computeVertexNormals();
+    return g;
+  }, [positions]);
+
+  const pointsGeometry = useMemo(() => {
     const g = new BufferGeometry();
 
     g.setFromPoints(positions);
@@ -48,24 +56,10 @@ function Points() {
 
   return (
     <>
-      {/* <mesh>
-        <bufferGeometry attach="geometry">
-          <bufferAttribute
-            attach="attributes-position"
-            array={positions}
-            count={positions.length / 3}
-            itemSize={3}
-          />
-          <bufferAttribute
-            attach="index"
-            array={indices}
-            count={indices.length}
-            itemSize={3}
-          />
-        </bufferGeometry>
+      <mesh geometry={meshGeometry}>
         <meshBasicMaterial attach="material" color={color} side={DoubleSide} />
-      </mesh> */}
-      <points geometry={geometry}>
+      </mesh>
+      <points geometry={pointsGeometry}>
         <pointsMaterial attach="material" size={0.1} />
       </points>
     </>

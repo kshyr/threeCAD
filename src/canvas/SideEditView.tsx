@@ -150,8 +150,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
         break;
     }
 
-    console.log(vertexPos);
-
     const newPositions = [...positions, vertexPos];
     setPositions(newPositions);
   }
