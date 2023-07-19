@@ -1,5 +1,4 @@
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
 import {
   OrbitControls,
   Stats,
@@ -8,50 +7,55 @@ import {
   GizmoViewport,
 } from "@react-three/drei";
 import { DoubleSide } from "three";
+import { useModelStore } from "../store";
 
-type PointsProps = {
-  positions: number[];
-  indices: number[];
-};
-
-type RenderViewProps = PointsProps;
-
-export default function RenderView({ positions, indices }: RenderViewProps) {
+export default function RenderView() {
   return (
     <>
       <Canvas className="border">
         <pointLight position={[5, 5, 5]} />
 
         <OrbitControls />
-        <Points positions={positions} indices={indices} />
+        <Points />
         <Stats />
 
         <GizmoHelper>
           <GizmoViewport />
         </GizmoHelper>
-        <Grid infiniteGrid />
+        <Grid infiniteGrid sectionColor={0x333333} />
       </Canvas>
     </>
   );
 }
 
-function Points({ positions, indices }: PointsProps) {
-  const [color, setColor] = useState(0xaaaaaa);
+function Points() {
+  const positions = useModelStore((state) => state.positions);
+  // const setPositions = useModelStore((state) => state.setPositions);
+
+  const indices = useModelStore((state) => state.indices);
+  // const setIndices = useModelStore((state) => state.setIndices);
+
+  const pointsPositionAttributeRef = useModelStore(
+    (state) => state.pointsPositionAttributeRef
+  );
+
+  const color = 0xaaaaaa;
+
   return (
     <>
       <mesh>
         <bufferGeometry attach="geometry">
           <bufferAttribute
             attach="attributes-position"
-            array={new Float32Array(positions)}
+            array={positions}
             count={positions.length / 3}
             itemSize={3}
-          />{" "}
+          />
           <bufferAttribute
             attach="index"
-            array={new Uint16Array(indices)}
+            array={indices}
             count={indices.length}
-            itemSize={1}
+            itemSize={3}
           />
         </bufferGeometry>
         <meshBasicMaterial attach="material" color={color} side={DoubleSide} />
@@ -59,8 +63,9 @@ function Points({ positions, indices }: PointsProps) {
       <points>
         <bufferGeometry attach="geometry">
           <bufferAttribute
+            ref={pointsPositionAttributeRef}
             attach="attributes-position"
-            array={new Float32Array(positions)}
+            array={positions}
             count={positions.length / 3}
             itemSize={3}
           />
