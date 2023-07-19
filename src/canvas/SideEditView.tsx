@@ -33,7 +33,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     ctx.beginPath();
     for (let x = 0; x < canvas.width; x += cellSize) {
-      ctx.moveTo(0.5 + x, 0);
+      ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
     }
 
@@ -44,7 +44,28 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     ctx.strokeStyle = "#222";
     ctx.stroke();
-  }, []);
+
+    for (let i = 0; i < positions.length; i++) {
+      const x = positions[i].x * cellSize;
+      const y = positions[i].y * cellSize;
+      const z = positions[i].z * cellSize;
+
+      switch (side) {
+        case "x":
+          drawVertex(-z + canvas.width / 2, -y + canvas.height / 2);
+          break;
+        case "y":
+          drawVertex(x + canvas.width / 2, z + canvas.height / 2);
+          break;
+        case "z":
+          drawVertex(x + canvas.width / 2, -y + canvas.height / 2);
+          break;
+        default:
+          drawVertex(y + canvas.width / 2, z + canvas.height / 2);
+          break;
+      }
+    }
+  }, [positions]);
 
   useEffect(() => {
     function handleResize() {
@@ -54,8 +75,8 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
       const canvas = canvasRef.current;
 
-      canvas.width = window.innerWidth / 2;
-      canvas.height = window.innerHeight / 2;
+      canvas.width = Math.floor(window.innerWidth / 2 / cellSize) * cellSize;
+      canvas.height = Math.floor(window.innerHeight / 2 / cellSize) * cellSize;
 
       drawGrid();
     }
@@ -106,13 +127,14 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     drawVertex(u, v);
 
-    const uOffset = Math.floor(u - canvas.width / 2);
-    const vOffset = Math.floor(v - canvas.height / 2);
+    // TODO: come back to this
+    const uOffset = Math.floor(u - canvas.width / 2) / cellSize;
+    const vOffset = Math.floor(v - canvas.height / 2) / cellSize;
     let vertexPos: Vector3;
 
     switch (side) {
       case "x":
-        vertexPos = new Vector3(0, uOffset, vOffset);
+        vertexPos = new Vector3(0, -vOffset, -uOffset);
         break;
 
       case "y":
@@ -120,7 +142,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
         break;
 
       case "z":
-        vertexPos = new Vector3(uOffset, vOffset, 0);
+        vertexPos = new Vector3(uOffset, -vOffset, 0);
         break;
 
       default:
