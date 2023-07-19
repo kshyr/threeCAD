@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { useModelStore } from "../store";
+import { Vector3 } from "three";
 
 type SideEditViewProps = {
   side: "x" | "y" | "z" | "-x" | "-y" | "-z";
@@ -13,10 +14,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
   // const indices = useModelStore((state) => state.indices);
   // const setIndices = useModelStore((state) => state.setIndices);
 
-  const pointsPositionAttributeRef = useModelStore(
-    (state) => state.pointsPositionAttributeRef
-  );
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
@@ -24,6 +21,30 @@ export default function SideEditView({ side }: SideEditViewProps) {
   );
 
   const cellSize = 48;
+
+  const drawGrid = useCallback(() => {
+    clearCanvas();
+    if (!canvasRef.current) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    ctx.beginPath();
+    for (let x = 0; x < canvas.width; x += cellSize) {
+      ctx.moveTo(0.5 + x, 0);
+      ctx.lineTo(x, canvas.height);
+    }
+
+    for (let y = 0; y < canvas.height; y += cellSize) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+    }
+
+    ctx.strokeStyle = "#222";
+    ctx.stroke();
+  }, []);
 
   useEffect(() => {
     function handleResize() {
@@ -45,7 +66,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [drawGrid]);
 
   function clearCanvas() {
     if (!canvasRef.current) {
@@ -56,28 +77,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  function drawGrid() {
-    if (!canvasRef.current) {
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-    for (let x = 0; x < canvas.width; x += cellSize) {
-      ctx.moveTo(0.5 + x, 0);
-      ctx.lineTo(x, canvas.height);
-    }
-
-    for (let y = 0; y < canvas.height; y += cellSize) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-    }
-
-    ctx.strokeStyle = "#222";
-    ctx.stroke();
-  }
-
   function drawVertex(u: number, v: number) {
     if (!canvasRef.current) {
       return;
@@ -86,13 +85,20 @@ export default function SideEditView({ side }: SideEditViewProps) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-    ctx.rect(u, v, cellSize / 8, cellSize / 8);
+    const vertexSize = cellSize / 6;
+    ctx.beginPath();
+    ctx.fillStyle = "#333";
+    ctx.fillRect(
+      u - vertexSize / 2,
+      v - vertexSize / 2,
+      vertexSize,
+      vertexSize
+    );
     ctx.stroke();
   }
 
   function addVertex(u: number, v: number) {
-    clearCanvas();
-    if (!canvasRef.current || !pointsPositionAttributeRef.current) {
+    if (!canvasRef.current) {
       return;
     }
 
@@ -102,33 +108,30 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     const uOffset = Math.floor(u - canvas.width / 2);
     const vOffset = Math.floor(v - canvas.height / 2);
-    let vertexPos: number[];
+    let vertexPos: Vector3;
 
     switch (side) {
       case "x":
-        vertexPos = [0, uOffset, vOffset];
+        vertexPos = new Vector3(0, uOffset, vOffset);
         break;
 
       case "y":
-        vertexPos = [uOffset, 0, vOffset];
+        vertexPos = new Vector3(uOffset, 0, vOffset);
         break;
 
       case "z":
-        vertexPos = [uOffset, vOffset, 0];
+        vertexPos = new Vector3(uOffset, vOffset, 0);
         break;
 
       default:
-        vertexPos = [0, uOffset, vOffset];
+        vertexPos = new Vector3(0, uOffset, vOffset);
         break;
     }
 
     console.log(vertexPos);
 
-    const newPositions = new Float32Array([...positions, ...vertexPos]);
+    const newPositions = [...positions, vertexPos];
     setPositions(newPositions);
-
-    pointsPositionAttributeRef.current.array = new Float32Array([0, 1, 2]);
-    pointsPositionAttributeRef.current.needsUpdate = true;
   }
 
   function getMousePos(clientX: number, clientY: number) {
