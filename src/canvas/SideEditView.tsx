@@ -47,6 +47,15 @@ export default function SideEditView({ side }: SideEditViewProps) {
     };
   }, []);
 
+  function clearCanvas() {
+    if (!canvasRef.current) {
+      return;
+    }
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
   function drawGrid() {
     if (!canvasRef.current) {
       return;
@@ -70,7 +79,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
   }
 
   function drawVertex(u: number, v: number) {
-    if (!canvasRef.current || !pointsPositionAttributeRef.current) {
+    if (!canvasRef.current) {
       return;
     }
 
@@ -79,6 +88,17 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     ctx.rect(u, v, cellSize / 8, cellSize / 8);
     ctx.stroke();
+  }
+
+  function addVertex(u: number, v: number) {
+    clearCanvas();
+    if (!canvasRef.current || !pointsPositionAttributeRef.current) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+
+    drawVertex(u, v);
 
     const uOffset = Math.floor(u - canvas.width / 2);
     const vOffset = Math.floor(v - canvas.height / 2);
@@ -125,7 +145,10 @@ export default function SideEditView({ side }: SideEditViewProps) {
     e.preventDefault();
     const { x, y } = getMousePos(e.clientX, e.clientY);
 
-    drawVertex(x, y);
+    const u = Math.round(x / cellSize) * cellSize;
+    const v = Math.round(y / cellSize) * cellSize;
+
+    addVertex(u, v);
   }
 
   function handleMouseDown(e: MouseEvent) {
