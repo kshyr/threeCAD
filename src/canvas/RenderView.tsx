@@ -31,10 +31,7 @@ export default function RenderView() {
 
 function Points() {
   const positions = useModelStore((state) => state.positions);
-  // const setPositions = useModelStore((state) => state.setPositions);
-
-  // const indices = useModelStore((state) => state.indices);
-  // const setIndices = useModelStore((state) => state.setIndices);
+  const indices = useModelStore((state) => state.indices);
 
   const color = 0xaaaaaa;
 
@@ -42,9 +39,10 @@ function Points() {
     const g = new BufferGeometry();
 
     g.setFromPoints(positions);
+    g.setIndex(indices);
     g.computeVertexNormals();
     return g;
-  }, [positions]);
+  }, [positions, indices]);
 
   const pointsGeometry = useMemo(() => {
     const g = new BufferGeometry();

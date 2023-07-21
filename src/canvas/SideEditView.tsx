@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { useModelStore } from "../store";
 import { Vector3 } from "three";
+import { buildCube } from "../util/shapes";
 
 type SideEditViewProps = {
   side: "x" | "y" | "z" | "-x" | "-y" | "-z";
@@ -11,8 +12,8 @@ export default function SideEditView({ side }: SideEditViewProps) {
   const positions = useModelStore((state) => state.positions);
   const setPositions = useModelStore((state) => state.setPositions);
 
-  // const indices = useModelStore((state) => state.indices);
-  // const setIndices = useModelStore((state) => state.setIndices);
+  const indices = useModelStore((state) => state.indices);
+  const setIndices = useModelStore((state) => state.setIndices);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
@@ -118,7 +119,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
     ctx.stroke();
   }
 
-  function addVertex(u: number, v: number) {
+  function drawShape(u: number, v: number) {
     if (!canvasRef.current) {
       return;
     }
@@ -130,28 +131,63 @@ export default function SideEditView({ side }: SideEditViewProps) {
     // TODO: come back to this
     const uOffset = Math.floor(u - canvas.width / 2) / cellSize;
     const vOffset = Math.floor(v - canvas.height / 2) / cellSize;
-    let vertexPos: Vector3;
+    let newPositions: Vector3[];
+    let newIndices: number[];
+    const size = 1;
 
     switch (side) {
-      case "x":
-        vertexPos = new Vector3(0, -vOffset, -uOffset);
+      case "x": {
+        const { vx, ix } = buildCube(
+          0,
+          -vOffset,
+          -uOffset,
+          size,
+          Math.max(Math.max(...indices) + 1, 0)
+        );
+        newPositions = vx;
+        newIndices = ix;
         break;
-
-      case "y":
-        vertexPos = new Vector3(uOffset, 0, vOffset);
+      }
+      case "y": {
+        const { vx, ix } = buildCube(
+          uOffset,
+          0,
+          vOffset,
+          size,
+          Math.max(Math.max(...indices) + 1, 0)
+        );
+        newPositions = vx;
+        newIndices = ix;
         break;
-
-      case "z":
-        vertexPos = new Vector3(uOffset, -vOffset, 0);
+      }
+      case "z": {
+        const { vx, ix } = buildCube(
+          uOffset,
+          -vOffset,
+          0,
+          size,
+          Math.max(Math.max(...indices) + 1, 0)
+        );
+        newPositions = vx;
+        newIndices = ix;
         break;
-
-      default:
-        vertexPos = new Vector3(0, uOffset, vOffset);
+      }
+      default: {
+        const { vx, ix } = buildCube(
+          uOffset,
+          -vOffset,
+          0,
+          size,
+          Math.max(Math.max(...indices) + 1, 0)
+        );
+        newPositions = vx;
+        newIndices = ix;
         break;
+      }
     }
 
-    const newPositions = [...positions, vertexPos];
-    setPositions(newPositions);
+    setPositions([...positions, ...newPositions]);
+    setIndices([...indices, ...newIndices]);
   }
 
   function getMousePos(clientX: number, clientY: number) {
@@ -171,7 +207,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
     const u = Math.round(x / cellSize) * cellSize;
     const v = Math.round(y / cellSize) * cellSize;
 
-    addVertex(u, v);
+    drawShape(u, v);
   }
 
   function handleMouseDown(e: MouseEvent) {
