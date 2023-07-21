@@ -176,8 +176,10 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   function handleMouseDown(e: MouseEvent) {
     if (e.buttons === 1) {
+      const { x, y } = getMousePos(e.clientX, e.clientY);
+
       setIsPressing(true);
-      setStartPos({ ...getMousePos(e.clientX, e.clientY) });
+      setStartPos({ x, y });
     }
   }
 
