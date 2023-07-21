@@ -16,8 +16,10 @@ export default function RenderView() {
       <Canvas className="border">
         <pointLight position={[5, 5, 5]} />
 
-        <OrbitControls />
+        <Meshes />
         <Points />
+
+        <OrbitControls />
         <Stats />
 
         <GizmoHelper>
@@ -29,7 +31,7 @@ export default function RenderView() {
   );
 }
 
-function Points() {
+function Meshes() {
   const positions = useModelStore((state) => state.positions);
   const indices = useModelStore((state) => state.indices);
 
@@ -44,6 +46,16 @@ function Points() {
     return g;
   }, [positions, indices]);
 
+  return (
+    <mesh geometry={meshGeometry}>
+      <meshBasicMaterial attach="material" color={color} side={DoubleSide} />
+    </mesh>
+  );
+}
+
+function Points() {
+  const positions = useModelStore((state) => state.positions);
+
   const pointsGeometry = useMemo(() => {
     const g = new BufferGeometry();
 
@@ -53,13 +65,8 @@ function Points() {
   }, [positions]);
 
   return (
-    <>
-      <mesh geometry={meshGeometry}>
-        <meshBasicMaterial attach="material" color={color} side={DoubleSide} />
-      </mesh>
-      <points geometry={pointsGeometry}>
-        <pointsMaterial attach="material" size={0.1} />
-      </points>
-    </>
+    <points geometry={pointsGeometry}>
+      <pointsMaterial attach="material" size={0.1} />
+    </points>
   );
 }
