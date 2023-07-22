@@ -17,6 +17,10 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
+  const [mouseLoc, setMouseLoc] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
     null
   );
@@ -191,19 +195,19 @@ export default function SideEditView({ side }: SideEditViewProps) {
     setIndices([...indices, ...newIndices]);
   }
 
-  function getMousePos(clientX: number, clientY: number) {
+  function getLocalMousePos() {
     const canvas = canvasRef.current as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
 
     return {
-      x: ((clientX - rect.left) / (rect.right - rect.left)) * canvas.width,
-      y: ((clientY - rect.top) / (rect.bottom - rect.top)) * canvas.height,
+      x: ((mouseLoc.x - rect.left) / (rect.right - rect.left)) * canvas.width,
+      y: ((mouseLoc.y - rect.top) / (rect.bottom - rect.top)) * canvas.height,
     };
   }
 
   function handleRightClick(e: MouseEvent) {
     e.preventDefault();
-    const { x, y } = getMousePos(e.clientX, e.clientY);
+    const { x, y } = getLocalMousePos();
 
     const u = Math.round(x / cellSize) * cellSize;
     const v = Math.round(y / cellSize) * cellSize;
@@ -213,7 +217,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   function handleMouseDown(e: MouseEvent) {
     if (e.buttons === 1) {
-      const { x, y } = getMousePos(e.clientX, e.clientY);
+      const { x, y } = getLocalMousePos();
       setIsPressing(true);
       setStartPos({ x, y });
     }
@@ -226,20 +230,23 @@ export default function SideEditView({ side }: SideEditViewProps) {
   }
 
   function handleMouseMove(e: MouseEvent) {
+    setMouseLoc({ x: e.clientX, y: e.clientY });
     if (!isPressing) {
       return;
     }
 
     if (!startPos) {
-      setStartPos({ ...getMousePos(e.clientX, e.clientY) });
+      setStartPos({ ...getLocalMousePos() });
 
       return;
     }
 
     const canvas = canvasRef.current as HTMLCanvasElement;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    const { x, y } = getMousePos(e.clientX, e.clientY);
+    const { x, y } = getLocalMousePos();
+
     drawGrid();
+
     ctx.beginPath();
     ctx.strokeStyle = "#444";
     ctx.lineWidth = 2;
