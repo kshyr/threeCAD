@@ -43,6 +43,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
       ctx.lineTo(canvas.width, y);
     }
 
+    ctx.lineWidth = 1;
     ctx.strokeStyle = "#222";
     ctx.stroke();
 
@@ -213,7 +214,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
   function handleMouseDown(e: MouseEvent) {
     if (e.buttons === 1) {
       const { x, y } = getMousePos(e.clientX, e.clientY);
-
       setIsPressing(true);
       setStartPos({ x, y });
     }
@@ -222,6 +222,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
   function handleMouseUp() {
     setIsPressing(false);
     setStartPos(null);
+    drawGrid();
   }
 
   function handleMouseMove(e: MouseEvent) {
@@ -237,17 +238,21 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     const canvas = canvasRef.current as HTMLCanvasElement;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 1;
+    const { x, y } = getMousePos(e.clientX, e.clientY);
+    drawGrid();
+    ctx.beginPath();
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#aaa";
     ctx.lineCap = "round";
 
-    const { x, y } = getMousePos(e.clientX, e.clientY);
-    ctx.beginPath();
-    ctx.moveTo(startPos.x, startPos.y);
-    ctx.lineTo(x, y);
+    ctx.moveTo(x, y);
+    ctx.lineTo(startPos.x, y);
+    ctx.lineTo(startPos.x, startPos.y);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, startPos.y);
+    ctx.lineTo(startPos.x, startPos.y);
     ctx.stroke();
-
-    setStartPos({ ...getMousePos(e.clientX, e.clientY) });
   }
 
   return (
