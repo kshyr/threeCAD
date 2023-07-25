@@ -8,6 +8,13 @@ type SideEditViewProps = {
   side: "x" | "y" | "z" | "-x" | "-y" | "-z";
 };
 
+type SelectedArea = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+} | null;
+
 export default function SideEditView({ side }: SideEditViewProps) {
   const positions = useModelStore((state) => state.positions);
   const setPositions = useModelStore((state) => state.setPositions);
@@ -15,17 +22,85 @@ export default function SideEditView({ side }: SideEditViewProps) {
   const indices = useModelStore((state) => state.indices);
   const setIndices = useModelStore((state) => state.setIndices);
 
+  const [selectedArea, setSelectedArea] = useState<SelectedArea>(null);
+
+  const selectedPoints = useModelStore((state) => state.selectedPoints);
+  const setSelectedPoints = useModelStore((state) => state.setSelectedPoints);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
   const [mouseLoc, setMouseLoc] = useState<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
-    null
-  );
 
   const cellSize = 48;
+
+  const drawVertex = useCallback(
+    (u: number, v: number, vertex: Vector3) => {
+      if (!canvasRef.current) {
+        return;
+      }
+
+      let isSelected = false;
+      if (
+        selectedArea &&
+        selectedArea.x1 < u &&
+        u <= selectedArea.x2 &&
+        selectedArea.y1 < v &&
+        v <= selectedArea.y2
+      ) {
+        isSelected = true;
+        if (!selectedPoints.includes(vertex)) {
+          setSelectedPoints([...selectedPoints, vertex]);
+        }
+      } else {
+        console.log(selectedPoints, vertex);
+        setSelectedPoints(
+          selectedPoints.filter(
+            (i) => JSON.stringify(i) !== JSON.stringify(vertex)
+          )
+        );
+      }
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+      const vertexSize = cellSize / 6;
+      ctx.beginPath();
+      ctx.fillStyle = isSelected ? "#733" : "#333";
+      ctx.fillRect(
+        u - vertexSize / 2,
+        v - vertexSize / 2,
+        vertexSize,
+        vertexSize
+      );
+      ctx.stroke();
+    },
+    [selectedArea]
+  );
+
+  const drawSelectedArea = useCallback(() => {
+    if (!selectedArea || !canvasRef.current || !isPressing) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    const { x, y } = getLocalMousePos();
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#aaa";
+    ctx.lineCap = "round";
+
+    ctx.moveTo(x, y);
+    ctx.lineTo(selectedArea.x1, y);
+    ctx.lineTo(selectedArea.x1, selectedArea.y1);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, selectedArea.y1);
+    ctx.lineTo(selectedArea.x1, selectedArea.y1);
+    ctx.stroke();
+  }, [isPressing, selectedArea]);
 
   const drawGrid = useCallback(() => {
     clearCanvas();
@@ -58,20 +133,29 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
       switch (side) {
         case "x":
-          drawVertex(-z + canvas.width / 2, -y + canvas.height / 2);
+          drawVertex(
+            -z + canvas.width / 2,
+            -y + canvas.height / 2,
+            positions[i]
+          );
           break;
         case "y":
-          drawVertex(x + canvas.width / 2, z + canvas.height / 2);
+          drawVertex(x + canvas.width / 2, z + canvas.height / 2, positions[i]);
           break;
         case "z":
-          drawVertex(x + canvas.width / 2, -y + canvas.height / 2);
+          drawVertex(
+            x + canvas.width / 2,
+            -y + canvas.height / 2,
+            positions[i]
+          );
           break;
         default:
-          drawVertex(y + canvas.width / 2, z + canvas.height / 2);
+          drawVertex(y + canvas.width / 2, z + canvas.height / 2, positions[i]);
           break;
       }
     }
-  }, [positions]);
+    drawSelectedArea();
+  }, [positions, side, drawVertex, drawSelectedArea]);
 
   useEffect(() => {
     function handleResize() {
@@ -104,34 +188,12 @@ export default function SideEditView({ side }: SideEditViewProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  function drawVertex(u: number, v: number) {
-    if (!canvasRef.current) {
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-    const vertexSize = cellSize / 6;
-    ctx.beginPath();
-    ctx.fillStyle = "#333";
-    ctx.fillRect(
-      u - vertexSize / 2,
-      v - vertexSize / 2,
-      vertexSize,
-      vertexSize
-    );
-    ctx.stroke();
-  }
-
   function drawShape(u: number, v: number) {
     if (!canvasRef.current) {
       return;
     }
 
     const canvas = canvasRef.current;
-
-    drawVertex(u, v);
 
     // TODO: come back to this
     const uOffset = Math.floor(u - canvas.width / 2) / cellSize;
@@ -216,50 +278,55 @@ export default function SideEditView({ side }: SideEditViewProps) {
   }
 
   function handleMouseDown(e: MouseEvent) {
+    drawGrid();
     if (e.buttons === 1) {
       const { x, y } = getLocalMousePos();
       setIsPressing(true);
-      setStartPos({ x, y });
+      setSelectedPoints([]);
+      setSelectedArea({ x1: x, y1: y, x2: x, y2: y });
     }
   }
 
   function handleMouseUp() {
-    setIsPressing(false);
-    setStartPos(null);
     drawGrid();
+    setIsPressing(false);
   }
 
   function handleMouseMove(e: MouseEvent) {
+    drawGrid();
     setMouseLoc({ x: e.clientX, y: e.clientY });
     if (!isPressing) {
       return;
     }
 
-    if (!startPos) {
-      setStartPos({ ...getLocalMousePos() });
+    const { x, y } = getLocalMousePos();
 
+    if (!selectedArea) {
+      setSelectedArea({ x1: x, y1: y, x2: x, y2: y });
       return;
     }
 
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    const { x, y } = getLocalMousePos();
+    let newX1, newY1, newX2, newY2;
 
-    drawGrid();
+    if (selectedArea.x1 >= x) {
+      newX1 = x;
+      newX2 = selectedArea.x1;
+    } else {
+      newX1 = selectedArea.x1;
+      newX2 = x;
+    }
 
-    ctx.beginPath();
-    ctx.strokeStyle = "#444";
-    ctx.lineWidth = 2;
-    ctx.fillStyle = "#aaa";
-    ctx.lineCap = "round";
+    if (selectedArea.y1 >= y) {
+      newY1 = y;
+      newY2 = selectedArea.y1;
+    } else {
+      newY1 = selectedArea.y1;
+      newY2 = y;
+    }
 
-    ctx.moveTo(x, y);
-    ctx.lineTo(startPos.x, y);
-    ctx.lineTo(startPos.x, startPos.y);
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, startPos.y);
-    ctx.lineTo(startPos.x, startPos.y);
-    ctx.stroke();
+    setSelectedArea({ x1: newX1, y1: newY1, x2: newX2, y2: newY2 });
+
+    console.log(selectedArea);
   }
 
   return (

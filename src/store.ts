@@ -9,6 +9,9 @@ type ModelState = {
   indices: number[];
   setIndices: (newIndices: number[]) => void;
 
+  selectedPoints: Vector3[];
+  setSelectedPoints: (newSelectedPoints: Vector3[]) => void;
+
   pointsPositionAttributeRef: RefObject<BufferAttribute>;
   indicesAttributeRef: RefObject<BufferAttribute>;
 };
@@ -19,6 +22,10 @@ export const useModelStore = create<ModelState>()((set) => ({
 
   indices: [],
   setIndices: (newIndices) => set({ indices: newIndices }),
+
+  selectedPoints: [],
+  setSelectedPoints: (newSelectedPoints) =>
+    set({ selectedPoints: newSelectedPoints }),
 
   pointsPositionAttributeRef: createRef(),
   indicesAttributeRef: createRef(),

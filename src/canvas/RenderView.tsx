@@ -53,20 +53,44 @@ function Meshes() {
   );
 }
 
+type Point = {
+  geometry: BufferGeometry;
+  isSelected: boolean;
+};
+
 function Points() {
   const positions = useModelStore((state) => state.positions);
+  const selectedPoints = useModelStore((state) => state.selectedPoints);
 
-  const pointsGeometry = useMemo(() => {
-    const g = new BufferGeometry();
+  const points = useMemo(() => {
+    const newPoints: Point[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const g = new BufferGeometry();
+      g.setFromPoints([positions[i]]);
+      g.computeVertexNormals();
 
-    g.setFromPoints(positions);
-    g.computeVertexNormals();
-    return g;
-  }, [positions]);
+      console.log(selectedPoints);
+      let isSelected = false;
+      if (selectedPoints.includes(positions[i])) {
+        isSelected = true;
+      }
+      const newPoint: Point = { geometry: g, isSelected };
 
-  return (
-    <points geometry={pointsGeometry}>
-      <pointsMaterial attach="material" size={0.1} />
-    </points>
-  );
+      newPoints.push(newPoint);
+    }
+
+    return newPoints;
+  }, [positions, selectedPoints]);
+
+  return points.map((point, i) => {
+    return (
+      <points geometry={point.geometry} key={`point-${i}`}>
+        <pointsMaterial
+          attach="material"
+          color={point.isSelected ? 0xaa5555 : 0xffffff}
+          size={0.1}
+        />
+      </points>
+    );
+  });
 }
