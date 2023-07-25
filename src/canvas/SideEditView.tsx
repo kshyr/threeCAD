@@ -29,12 +29,13 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
+
   const [mouseLoc, setMouseLoc] = useState<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
 
-  const cellSize = 48;
+  const cellSize = 40;
 
   const drawVertex = useCallback(
     (u: number, v: number, vertex: Vector3) => {
@@ -56,11 +57,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
         }
       } else {
         console.log(selectedPoints, vertex);
-        setSelectedPoints(
-          selectedPoints.filter(
-            (i) => JSON.stringify(i) !== JSON.stringify(vertex)
-          )
-        );
+        setSelectedPoints(selectedPoints.filter((i) => i !== vertex));
       }
 
       const canvas = canvasRef.current;
@@ -195,7 +192,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     const canvas = canvasRef.current;
 
-    // TODO: come back to this
     const uOffset = Math.floor(u - canvas.width / 2) / cellSize;
     const vOffset = Math.floor(v - canvas.height / 2) / cellSize;
     let newPositions: Vector3[];
@@ -271,8 +267,10 @@ export default function SideEditView({ side }: SideEditViewProps) {
     e.preventDefault();
     const { x, y } = getLocalMousePos();
 
-    const u = Math.round(x / cellSize) * cellSize;
-    const v = Math.round(y / cellSize) * cellSize;
+    const gridX = Math.round(x / cellSize) * cellSize;
+    const gridY = Math.round(y / cellSize) * cellSize;
+    const u = x > gridX ? gridX + cellSize / 2 : gridX - cellSize / 2;
+    const v = y > gridY ? gridY + cellSize / 2 : gridY - cellSize / 2;
 
     drawShape(u, v);
   }
