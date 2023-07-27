@@ -43,21 +43,22 @@ export default function SideEditView({ side }: SideEditViewProps) {
         return;
       }
 
-      let isSelected = false;
-      if (
+      const isInsideSelectedArea =
         selectedArea &&
         selectedArea.x1 < u &&
         u <= selectedArea.x2 &&
         selectedArea.y1 < v &&
-        v <= selectedArea.y2
-      ) {
+        v <= selectedArea.y2;
+
+      let isSelected = false;
+
+      if (isInsideSelectedArea) {
         isSelected = true;
         if (!selectedPoints.includes(vertex)) {
           setSelectedPoints([...selectedPoints, vertex]);
         }
-      } else {
-        console.log(selectedPoints, vertex);
-        setSelectedPoints(selectedPoints.filter((i) => i !== vertex));
+      } else if (selectedPoints.includes(vertex)) {
+        isSelected = true;
       }
 
       const canvas = canvasRef.current;
@@ -74,7 +75,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
       );
       ctx.stroke();
     },
-    [selectedArea]
+    [selectedArea, selectedPoints, setSelectedPoints]
   );
 
   const drawSelectedArea = useCallback(() => {
@@ -97,7 +98,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
     ctx.lineTo(x, selectedArea.y1);
     ctx.lineTo(selectedArea.x1, selectedArea.y1);
     ctx.stroke();
-  }, [isPressing, selectedArea]);
+  }, [isPressing, selectedArea, getLocalMousePos]);
 
   const drawGrid = useCallback(() => {
     clearCanvas();
