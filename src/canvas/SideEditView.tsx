@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import { useModelStore, Side, SelectedArea } from "../store";
 import { Vector3 } from "three";
 import { buildCube } from "../util/shapes";
+import { GizmoHelper, GizmoViewport } from "@react-three/drei";
 
 type SideEditViewProps = {
   side: Side;
@@ -268,6 +269,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   function handleRightClick(e: MouseEvent) {
     e.preventDefault();
+    clearSelection();
     const { x, y } = getLocalMousePos();
 
     const gridX = Math.round(x / cellSize) * cellSize;
@@ -329,7 +331,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
   }
 
   return (
-    <div className="flex justify-center items-center h-full">
+    <div className="flex relative justify-center items-center h-full">
       <canvas
         ref={canvasRef}
         className="border h-full w-full"
@@ -338,6 +340,9 @@ export default function SideEditView({ side }: SideEditViewProps) {
         onMouseMove={handleMouseMove}
         onContextMenu={handleRightClick}
       />
+      <h1 className="absolute top-4 right-4 font-bold text-lg text-gray-300">
+        {side.toUpperCase()}
+      </h1>
     </div>
   );
 }
