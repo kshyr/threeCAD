@@ -424,6 +424,9 @@ export default function SideEditView({ side }: SideEditViewProps) {
       <h1 className="absolute top-2 right-4 font-bold text-lg text-gray-300 pointer-events-none">
         {side.toUpperCase()}
       </h1>
+      <h1 className="fixed bottom-4 left-4 text-gray-300 max-w-xs">
+        use "WASD" to move selected vertices when hovering over desired sideview
+      </h1>
     </div>
   );
 }
