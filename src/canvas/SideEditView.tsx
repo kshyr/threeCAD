@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import { useModelStore } from "../store";
+import { useModelStore, Side, SelectedArea } from "../store";
 import { Vector3 } from "three";
 import { buildCube } from "../util/shapes";
 
 type SideEditViewProps = {
-  side: "x" | "y" | "z" | "-x" | "-y" | "-z";
+  side: Side;
 };
-
-type SelectedArea = {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-} | null;
 
 export default function SideEditView({ side }: SideEditViewProps) {
   const positions = useModelStore((state) => state.positions);
@@ -22,7 +15,13 @@ export default function SideEditView({ side }: SideEditViewProps) {
   const indices = useModelStore((state) => state.indices);
   const setIndices = useModelStore((state) => state.setIndices);
 
-  const [selectedArea, setSelectedArea] = useState<SelectedArea>(null);
+  const selectedArea = useModelStore(
+    (state) => state.selectionAreas.find((a) => a.side === side)?.selectedArea
+  );
+  const clearSelection = useModelStore((state) => state.clearSelection);
+  const setSelectedArea = (newSelectedArea: SelectedArea) => {
+    useModelStore.getState().setSelectedArea(newSelectedArea, side);
+  };
 
   const selectedPoints = useModelStore((state) => state.selectedPoints);
   const setSelectedPoints = useModelStore((state) => state.setSelectedPoints);
@@ -36,6 +35,19 @@ export default function SideEditView({ side }: SideEditViewProps) {
   });
 
   const cellSize = 40;
+
+  useEffect(() => {
+    console.log(selectedArea);
+  }, [selectedArea]);
+  const getLocalMousePos = useCallback(() => {
+    const canvas = canvasRef.current as HTMLCanvasElement;
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+      x: ((mouseLoc.x - rect.left) / (rect.right - rect.left)) * canvas.width,
+      y: ((mouseLoc.y - rect.top) / (rect.bottom - rect.top)) * canvas.height,
+    };
+  }, [mouseLoc]);
 
   const drawVertex = useCallback(
     (u: number, v: number, vertex: Vector3) => {
@@ -83,7 +95,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    const { x, y } = getLocalMousePos();
 
     ctx.beginPath();
     ctx.strokeStyle = "#444";
@@ -91,14 +102,15 @@ export default function SideEditView({ side }: SideEditViewProps) {
     ctx.fillStyle = "#aaa";
     ctx.lineCap = "round";
 
-    ctx.moveTo(x, y);
-    ctx.lineTo(selectedArea.x1, y);
+    ctx.moveTo(selectedArea.x1, selectedArea.y1);
+    ctx.lineTo(selectedArea.x2, selectedArea.y1);
+    ctx.lineTo(selectedArea.x2, selectedArea.y2);
+    ctx.moveTo(selectedArea.x2, selectedArea.y2);
+    ctx.lineTo(selectedArea.x1, selectedArea.y2);
     ctx.lineTo(selectedArea.x1, selectedArea.y1);
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, selectedArea.y1);
-    ctx.lineTo(selectedArea.x1, selectedArea.y1);
+
     ctx.stroke();
-  }, [isPressing, selectedArea, getLocalMousePos]);
+  }, [isPressing, selectedArea]);
 
   const drawGrid = useCallback(() => {
     clearCanvas();
@@ -254,16 +266,6 @@ export default function SideEditView({ side }: SideEditViewProps) {
     setIndices([...indices, ...newIndices]);
   }
 
-  function getLocalMousePos() {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    const rect = canvas.getBoundingClientRect();
-
-    return {
-      x: ((mouseLoc.x - rect.left) / (rect.right - rect.left)) * canvas.width,
-      y: ((mouseLoc.y - rect.top) / (rect.bottom - rect.top)) * canvas.height,
-    };
-  }
-
   function handleRightClick(e: MouseEvent) {
     e.preventDefault();
     const { x, y } = getLocalMousePos();
@@ -281,7 +283,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
     if (e.buttons === 1) {
       const { x, y } = getLocalMousePos();
       setIsPressing(true);
-      setSelectedPoints([]);
+      clearSelection();
       setSelectedArea({ x1: x, y1: y, x2: x, y2: y });
     }
   }
@@ -309,7 +311,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     if (selectedArea.x1 >= x) {
       newX1 = x;
-      newX2 = selectedArea.x1;
+      newX2 = selectedArea.x2;
     } else {
       newX1 = selectedArea.x1;
       newX2 = x;
@@ -317,15 +319,13 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
     if (selectedArea.y1 >= y) {
       newY1 = y;
-      newY2 = selectedArea.y1;
+      newY2 = selectedArea.y2;
     } else {
       newY1 = selectedArea.y1;
       newY2 = y;
     }
 
     setSelectedArea({ x1: newX1, y1: newY1, x2: newX2, y2: newY2 });
-
-    console.log(selectedArea);
   }
 
   return (

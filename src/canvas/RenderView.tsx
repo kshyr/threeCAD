@@ -69,7 +69,6 @@ function Points() {
       g.setFromPoints([positions[i]]);
       g.computeVertexNormals();
 
-      console.log(selectedPoints);
       let isSelected = false;
       if (selectedPoints.includes(positions[i])) {
         isSelected = true;
