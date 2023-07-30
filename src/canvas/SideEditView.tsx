@@ -3,7 +3,6 @@ import type { MouseEvent } from "react";
 import { useModelStore, Side, SelectedArea } from "../store";
 import { Vector3 } from "three";
 import { buildCube } from "../util/shapes";
-import { GizmoHelper, GizmoViewport } from "@react-three/drei";
 
 type SideEditViewProps = {
   side: Side;
@@ -26,6 +25,9 @@ export default function SideEditView({ side }: SideEditViewProps) {
 
   const selectedPoints = useModelStore((state) => state.selectedPoints);
   const setSelectedPoints = useModelStore((state) => state.setSelectedPoints);
+
+  const activeSide = useModelStore((state) => state.activeSide);
+  const setActiveSide = useModelStore((state) => state.setActiveSide);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPressing, setIsPressing] = useState(false);
@@ -185,8 +187,10 @@ export default function SideEditView({ side }: SideEditViewProps) {
     handleResize();
 
     window.addEventListener("resize", handleResize);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [drawGrid]);
 
@@ -296,6 +300,7 @@ export default function SideEditView({ side }: SideEditViewProps) {
   }
 
   function handleMouseMove(e: MouseEvent) {
+    setActiveSide(side);
     drawGrid();
     setMouseLoc({ x: e.clientX, y: e.clientY });
     if (!isPressing) {
@@ -330,17 +335,93 @@ export default function SideEditView({ side }: SideEditViewProps) {
     setSelectedArea({ x1: newX1, y1: newY1, x2: newX2, y2: newY2 });
   }
 
+  function handleKeyDown(e: KeyboardEvent) {
+    let newSelectedPoints = selectedPoints;
+
+    switch (e.key) {
+      case "w": {
+        newSelectedPoints = selectedPoints.map((p) => {
+          if (activeSide === "z") {
+            p.y += 1;
+          } else if (activeSide === "x") {
+            p.y += 1;
+          } else if (activeSide === "y") {
+            p.z -= 1;
+          }
+          return p;
+        });
+        break;
+      }
+
+      case "a": {
+        newSelectedPoints = selectedPoints.map((p) => {
+          if (activeSide === "z") {
+            p.x -= 1;
+          } else if (activeSide === "x") {
+            p.z += 1;
+          } else if (activeSide === "y") {
+            p.x -= 1;
+          }
+          return p;
+        });
+        break;
+      }
+
+      case "d": {
+        newSelectedPoints = selectedPoints.map((p) => {
+          if (activeSide === "z") {
+            p.x += 1;
+          } else if (activeSide === "x") {
+            p.z -= 1;
+          } else if (activeSide === "y") {
+            p.x += 1;
+          }
+          return p;
+        });
+        break;
+      }
+
+      case "s": {
+        newSelectedPoints = selectedPoints.map((p) => {
+          if (activeSide === "z") {
+            p.y -= 1;
+          } else if (activeSide === "x") {
+            p.y -= 1;
+          } else if (activeSide === "y") {
+            p.z += 1;
+          }
+          return p;
+        });
+        break;
+      }
+    }
+
+    const newPositions = positions.map((pos) => {
+      selectedPoints.forEach((selected, i) => {
+        if (pos === selected) {
+          return newSelectedPoints[i];
+        }
+      });
+      return pos;
+    });
+
+    setPositions(newPositions);
+    setSelectedPoints(newSelectedPoints);
+  }
+
   return (
     <div className="flex relative justify-center items-center h-full">
       <canvas
         ref={canvasRef}
-        className="border h-full w-full"
+        className={`border-2 h-full w-full ${
+          side === activeSide ? "border-zinc-600" : "border-zinc-900"
+        }`}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
         onContextMenu={handleRightClick}
       />
-      <h1 className="absolute top-4 right-4 font-bold text-lg text-gray-300">
+      <h1 className="absolute top-2 right-4 font-bold text-lg text-gray-300 pointer-events-none">
         {side.toUpperCase()}
       </h1>
     </div>
