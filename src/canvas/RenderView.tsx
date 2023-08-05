@@ -13,7 +13,7 @@ import { useMemo } from "react";
 export default function RenderView() {
   return (
     <>
-      <Canvas className="border">
+      <Canvas>
         <pointLight position={[5, 5, 5]} />
 
         <Meshes />

@@ -425,7 +425,8 @@ export default function SideEditView({ side }: SideEditViewProps) {
         {side.toUpperCase()}
       </h1>
       <h1 className="fixed bottom-4 left-4 text-gray-300 max-w-xs">
-        use "WASD" to move selected vertices when hovering over desired sideview
+        - right click to create a cube mesh <br />- use "WASD" to move selected
+        vertices when hovering over desired sideview
       </h1>
     </div>
   );
